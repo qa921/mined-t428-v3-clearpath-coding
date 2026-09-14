@@ -1,0 +1,28 @@
+{
+  "roles": [
+    "administrator",
+    "staff",
+    "faculty",
+    "student"
+  ],
+  "programs": [
+    {
+      "name": "Web Foundations",
+      "taxInclusivePrice": 450,
+      "currency": "USD"
+    },
+    {
+      "name": "Python Projects",
+      "taxInclusivePrice": 520,
+      "currency": "USD"
+    }
+  ],
+  "invoice": {
+    "studentName": "typed field",
+    "studentEmail": "omitted",
+    "program": "typed or selected",
+    "paymentProof": "authorized upload reference",
+    "taxRule": "stored price is tax inclusive",
+    "pdfStatus": "not implemented"
+  }
+}
