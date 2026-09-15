@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Admin | Clearpath Coding Academy</title>
+<link rel="stylesheet" href="/assets/styles.css">
+</head>
+<body>
+<header id="site-header"></header>
+<main>
+  <h1>Administration</h1>
+  <p id="guard-note" class="note"></p>
+
+  <section class="card"><h2>Roles</h2><ul id="a-roles"></ul></section>
+
+  <section class="card">
+    <h2>Programs (tax-inclusive prices)</h2>
+    <table id="a-programs">
+      <thead><tr><th>Program</th><th>Price</th><th>Note</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </section>
+
+  <section class="card">
+    <h2>Invoices</h2>
+    <table id="a-invoices">
+      <thead><tr><th>Invoice</th><th>Student</th><th>Program</th><th>Amount (tax incl.)</th><th>Linked proof</th><th>Status</th><th>Action</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </section>
+
+  <section class="card">
+    <h2>Payment proofs</h2>
+    <table id="a-proofs">
+      <thead><tr><th>Proof</th><th>Type</th><th>Received</th><th>Status</th><th>Linked invoice</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </section>
+
+  <section class="card">
+    <h2>Skipped source records</h2>
+    <p class="muted">These source candidates were intentionally not converted into invoices:</p>
+    <table id="a-skipped">
+      <thead><tr><th>Source</th><th>Student</th><th>Reason</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </section>
+</main>
+<footer id="site-footer"></footer>
+<script src="/assets/common.js"></script>
+<script>
+CCP.chrome('admin');
+CCP.guardNote(['administrator']);
+
+async function loadAdmin() {
+  const res = await CCP.api('/api/admin');
+  if (!res.ok) {
+    const d = await res.json().catch(() => ({}));
+    ['a-roles'].forEach(id => document.getElementById(id).innerHTML = `<li>${d.error || 'Not available for this role.'}</li>`);
+    return;
+  }
+  const d = await res.json();
+  document.getElementById('a-roles').innerHTML = d.roles.map(r => `<li>${r}</li>`).join('');
+  document.querySelector('#a-programs tbody').innerHTML = d.programs.map(p =>
+    `<tr><td>${p.name}</td><td>${p.currency} ${p.taxInclusivePrice.toFixed(2)}</td><td>${d.taxLabel}</td></tr>`).join('');
+  document.querySelector('#a-invoices tbody').innerHTML = d.invoices.map(i =>
+    `<tr><td>${i.id}</td><td>${i.studentName}</td><td>${i.programName}</td><td>${i.displayAmount}<br><small>${i.priceNote}</small></td><td>${i.proofId || '—'}</td><td><span class="badge ${i.status}">${i.status}</span></td><td>${i.status === 'issued' ? `<button type="button" onclick="voidInvoice('${i.id}')">Void</button>` : ''}</td></tr>`).join('');
+  document.querySelector('#a-proofs tbody').innerHTML = d.proofs.map(p =>
+    `<tr><td>${p.proofId}</td><td>${p.type}</td><td>${p.receivedAt}</td><td><span class="badge ${p.status}">${p.status}</span></td><td>${p.linkedInvoiceId || '—'}</td></tr>`).join('');
+  document.querySelector('#a-skipped tbody').innerHTML = d.skippedSources.map(s =>
+    `<tr><td>${s.sourceId}</td><td>${s.studentName}</td><td>${s.reason}</td></tr>`).join('');
+}
+
+async function voidInvoice(id) {
+  if (!confirm(`Void invoice ${id}? The linked proof becomes usable again.`)) return;
+  const res = await CCP.api('/api/admin', { method: 'POST', body: { action: 'void', invoiceId: id } });
+  const d = await res.json().catch(() => ({}));
+  if (!res.ok) { alert(d.error || 'Failed to void.'); return; }
+  loadAdmin();
+}
+
+loadAdmin();
+</script>
+</body>
+</html>

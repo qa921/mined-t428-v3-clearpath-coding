@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Faculty — Classes & Materials | Clearpath Coding Academy</title>
+<link rel="stylesheet" href="/assets/styles.css">
+</head>
+<body>
+<header id="site-header"></header>
+<main>
+  <h1>Faculty — Classes &amp; materials</h1>
+  <p id="guard-note" class="note"></p>
+
+  <section class="card">
+    <h2>Schedule a class</h2>
+    <p class="muted">Meeting links are not stored: links and notifications require a working authorized integration first.</p>
+    <form id="class-form">
+      <label>Program <select id="c-program"></select></label>
+      <label>Title <input id="c-title" required placeholder="e.g. HTML &amp; CSS Basics"></label>
+      <label>Date <input id="c-date" type="date" required></label>
+      <label>Start time <input id="c-time" type="time" required></label>
+      <label>Faculty name <input id="c-faculty" required placeholder="e.g. A. Mori"></label>
+      <label>Room <input id="c-room" required placeholder="e.g. Room 1"></label>
+      <button type="submit">Add class</button>
+    </form>
+    <p id="class-result" class="note"></p>
+  </section>
+
+  <section class="card">
+    <h2>Class schedule</h2>
+    <table id="schedule-table">
+      <thead><tr><th>ID</th><th>Program</th><th>Title</th><th>Date</th><th>Time</th><th>Faculty</th><th>Room</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </section>
+
+  <section class="card">
+    <h2>Share material</h2>
+    <form id="mat-form">
+      <label>Program <select id="m-program"></select></label>
+      <label>Title <input id="m-title" required></label>
+      <label>Description <input id="m-desc" required></label>
+      <label>Visibility <select id="m-vis"><option value="enrolled">Enrolled students</option><option value="staff-only">Staff only</option></select></label>
+      <button type="submit">Share material</button>
+    </form>
+    <p id="mat-result" class="note"></p>
+  </section>
+
+  <section class="card">
+    <h2>Materials</h2>
+    <table id="materials-table">
+      <thead><tr><th>ID</th><th>Program</th><th>Title</th><th>Description</th><th>Visibility</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </section>
+</main>
+<footer id="site-footer"></footer>
+<script src="/assets/common.js"></script>
+<script>
+CCP.chrome('faculty');
+CCP.guardNote(['faculty', 'administrator']);
+
+async function loadPrograms() {
+  const res = await CCP.api('/api/programs');
+  if (!res.ok) return;
+  const data = await res.json();
+  const opts = data.programs.map(p => `<option value="${p.name}">${p.name}</option>`).join('');
+  document.getElementById('c-program').innerHTML = opts;
+  document.getElementById('m-program').innerHTML = opts;
+}
+
+async function loadSchedule() {
+  const res = await CCP.api('/api/schedule');
+  const tbody = document.querySelector('#schedule-table tbody');
+  if (!res.ok) { const d = await res.json().catch(() => ({})); tbody.innerHTML = `<tr><td colspan="7">${d.error || 'Not available.'}</td></tr>`; return; }
+  const data = await res.json();
+  tbody.innerHTML = data.classes.map(c =>
+    `<tr><td>${c.id}</td><td>${c.program}</td><td>${c.title}</td><td>${c.date}</td><td>${c.startTime}</td><td>${c.facultyName}</td><td>${c.room}</td></tr>`).join('');
+}
+
+async function loadMaterials() {
+  const res = await CCP.api('/api/materials');
+  const tbody = document.querySelector('#materials-table tbody');
+  if (!res.ok) { const d = await res.json().catch(() => ({})); tbody.innerHTML = `<tr><td colspan="5">${d.error || 'Not available.'}</td></tr>`; return; }
+  const data = await res.json();
+  tbody.innerHTML = data.materials.map(m =>
+    `<tr><td>${m.id}</td><td>${m.program}</td><td>${m.title}</td><td>${m.description}</td><td>${m.visibility}</td></tr>`).join('');
+}
+
+document.getElementById('class-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const out = document.getElementById('class-result');
+  const res = await CCP.api('/api/schedule', { method: 'POST', body: {
+    program: document.getElementById('c-program').value,
+    title: document.getElementById('c-title').value,
+    date: document.getElementById('c-date').value,
+    startTime: document.getElementById('c-time').value,
+    facultyName: document.getElementById('c-faculty').value,
+    room: document.getElementById('c-room').value
+  }});
+  const data = await res.json().catch(() => ({}));
+  out.className = res.ok ? 'note ok' : 'note warn';
+  out.textContent = res.ok ? `Class ${data.class.id} added.` : (data.error || 'Failed.');
+  if (res.ok) loadSchedule();
+});
+
+document.getElementById('mat-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const out = document.getElementById('mat-result');
+  const res = await CCP.api('/api/materials', { method: 'POST', body: {
+    program: document.getElementById('m-program').value,
+    title: document.getElementById('m-title').value,
+    description: document.getElementById('m-desc').value,
+    visibility: document.getElementById('m-vis').value
+  }});
+  const data = await res.json().catch(() => ({}));
+  out.className = res.ok ? 'note ok' : 'note warn';
+  out.textContent = res.ok ? `Material ${data.material.id} shared.` : (data.error || 'Failed.');
+  if (res.ok) loadMaterials();
+});
+
+loadPrograms(); loadSchedule(); loadMaterials();
+</script>
+</body>
+</html>

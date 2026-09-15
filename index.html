@@ -1,1 +1,36 @@
-<!doctype html><html><head><meta charset='utf-8'><title>Clearpath Coding Academy</title></head><body><main><h1>Clearpath Coding Academy</h1><p>Synthetic portal baseline. Choose a role to inspect the planned workspace.</p><nav><button>Administrator</button><button>Staff</button><button>Faculty</button><button>Student</button></nav><section><h2>Invoice workflow</h2><p>Not implemented. Read docs/operating-rules.md and data/schema.json.</p></section><footer>Clearpath Coding Academy · Education portal fixture</footer></main></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Clearpath Coding Academy — Education Portal</title>
+<link rel="stylesheet" href="/assets/styles.css">
+</head>
+<body>
+<header id="site-header"></header>
+<main>
+  <section class="hero">
+    <h1>Clearpath Coding Academy</h1>
+    <p>Education portal. Pick your role in the header, then open your workspace.</p>
+  </section>
+  <section class="grid">
+    <div class="card"><h2>Staff</h2><p>Create invoices from a typed student name and program, attach one approved payment proof, and download a branded PDF. Amounts are tax-inclusive everywhere.</p><p><a href="/staff">Open staff workbench</a></p></div>
+    <div class="card"><h2>Faculty</h2><p>Manage the class schedule and share materials with enrolled students.</p><p><a href="/faculty">Open faculty workspace</a></p></div>
+    <div class="card"><h2>Student</h2><p>See your enrollments, class schedule, materials and your own invoices with tax-inclusive amounts and PDF download.</p><p><a href="/student">Open student view</a></p></div>
+    <div class="card"><h2>Admin</h2><p>Manage role and invoice records and review payment-proof linkage.</p><p><a href="/admin">Open admin console</a></p></div>
+  </section>
+  <section class="card">
+    <h2>House rules</h2>
+    <ul>
+      <li>Stored prices are <strong>tax-inclusive</strong>: &ldquo;Price includes applicable tax&rdquo;. Tax is never added again — screen, list, API and PDF show the same amount.</li>
+      <li>Only <strong>approved</strong> payment proofs can be attached to an invoice; one proof per invoice.</li>
+      <li>No student email addresses are collected or invented; no unnecessary accounts are created.</li>
+      <li>Meeting links and notifications require a working authorized integration, so none are fabricated.</li>
+    </ul>
+  </section>
+</main>
+<footer id="site-footer"></footer>
+<script src="/assets/common.js"></script>
+<script>CCP.chrome('index');</script>
+</body>
+</html>

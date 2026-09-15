@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Staff — Invoice Workbench | Clearpath Coding Academy</title>
+<link rel="stylesheet" href="/assets/styles.css">
+</head>
+<body>
+<header id="site-header"></header>
+<main>
+  <h1>Staff — Invoice workbench</h1>
+  <p id="guard-note" class="note"></p>
+
+  <section class="card">
+    <h2>How invoicing works</h2>
+    <ol>
+      <li>Type the <strong>student name</strong> and choose the <strong>program</strong>. The price shown is the stored <strong>tax-inclusive</strong> price — tax is never added again.</li>
+      <li>Attach one <strong>approved</strong> payment proof. Revoked or pending-review proofs cannot be used, and each proof can be linked to only one invoice.</li>
+      <li>Create the invoice, then download the branded PDF. Screen, list, API and PDF all show the same amount with the note &ldquo;Price includes applicable tax&rdquo;.</li>
+      <li>We never collect or invent student email addresses, and no student accounts are created here.</li>
+    </ol>
+  </section>
+
+  <section class="card">
+    <h2>Create invoice</h2>
+    <form id="create-form">
+      <label>Student name <input id="f-student" required placeholder="e.g. Aya Ueda"></label>
+      <label>Program <select id="f-program"></select></label>
+      <label>Approved payment proof <select id="f-proof"></select></label>
+      <button type="submit">Create invoice</button>
+    </form>
+    <p id="create-result" class="note"></p>
+  </section>
+
+  <section class="card">
+    <h2>Invoices</h2>
+    <p class="muted">Each row shows the linked payment proof, so you can see which proof belongs to which invoice.</p>
+    <table id="invoices-table">
+      <thead><tr><th>Invoice</th><th>Student</th><th>Program</th><th>Amount (tax incl.)</th><th>Linked proof</th><th>Status</th><th>PDF</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </section>
+
+  <section class="card">
+    <h2>Payment proofs &amp; linkage</h2>
+    <table id="proofs-table">
+      <thead><tr><th>Proof</th><th>Type</th><th>Received</th><th>Status</th><th>Linked invoice</th><th>Usable</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </section>
+</main>
+<footer id="site-footer"></footer>
+<script src="/assets/common.js"></script>
+<script>
+CCP.chrome('staff');
+CCP.guardNote(['staff', 'administrator']);
+
+async function loadPrograms() {
+  const res = await CCP.api('/api/programs');
+  if (!res.ok) return;
+  const data = await res.json();
+  document.getElementById('f-program').innerHTML = data.programs.map(p =>
+    `<option value="${p.name}">${p.name} — ${p.currency} ${p.taxInclusivePrice.toFixed(2)} (tax included)</option>`).join('');
+}
+
+async function loadProofs() {
+  const res = await CCP.api('/api/proofs');
+  const tbody = document.querySelector('#proofs-table tbody');
+  const sel = document.getElementById('f-proof');
+  if (!res.ok) { const d = await res.json().catch(() => ({})); tbody.innerHTML = `<tr><td colspan="6">${d.error || 'Not available for this role.'}</td></tr>`; return; }
+  const data = await res.json();
+  tbody.innerHTML = data.proofs.map(p =>
+    `<tr><td>${p.proofId}</td><td>${p.type}</td><td>${p.receivedAt}</td><td><span class="badge ${p.status}">${p.status}</span></td><td>${p.linkedInvoiceId || '—'}</td><td>${p.usable ? 'yes' : 'no'}</td></tr>`).join('');
+  const usable = data.proofs.filter(p => p.usable);
+  sel.innerHTML = usable.length
+    ? usable.map(p => `<option value="${p.proofId}">${p.proofId} (${p.type}, received ${p.receivedAt})</option>`).join('')
+    : '<option value="">No approved, unlinked proof available</option>';
+}
+
+async function loadInvoices() {
+  const res = await CCP.api('/api/invoices');
+  const tbody = document.querySelector('#invoices-table tbody');
+  if (!res.ok) { const d = await res.json().catch(() => ({})); tbody.innerHTML = `<tr><td colspan="7">${d.error || 'Not available for this role.'}</td></tr>`; return; }
+  const data = await res.json();
+  tbody.innerHTML = data.invoices.map(i =>
+    `<tr><td>${i.id}</td><td>${i.studentName}</td><td>${i.programName}</td><td>${i.displayAmount}<br><small>${i.priceNote}</small></td><td>${i.proofId || '—'}</td><td><span class="badge ${i.status}">${i.status}</span></td><td><button type="button" onclick="CCP.downloadPdf('${i.id}')">Download PDF</button></td></tr>`).join('');
+}
+
+document.getElementById('create-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const out = document.getElementById('create-result');
+  out.className = 'note'; out.textContent = 'Creating…';
+  const res = await CCP.api('/api/invoices', { method: 'POST', body: {
+    studentName: document.getElementById('f-student').value,
+    programName: document.getElementById('f-program').value,
+    proofId: document.getElementById('f-proof').value
+  }});
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) { out.className = 'note warn'; out.textContent = data.error || 'Failed to create invoice.'; return; }
+  out.className = 'note ok';
+  out.textContent = `${data.invoice.id} created for ${data.invoice.studentName} — ${data.invoice.displayAmount}. ${data.message}`;
+  document.getElementById('f-student').value = '';
+  loadInvoices(); loadProofs();
+});
+
+loadPrograms(); loadProofs(); loadInvoices();
+</script>
+</body>
+</html>
